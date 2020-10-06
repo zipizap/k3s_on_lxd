@@ -48,39 +48,24 @@ exec_in_container() {
 }
 
 assure_exists_profile_k3sprofile() {
-  if lxc profile show k3sprofile &>/dev/null
+  if lxc profile show "${LXC_PROFILE_NAME}" &>/dev/null
   then
     # profile already exists, lets delete it
-    lxc profile delete k3sprofile
+    lxc profile delete "${LXC_PROFILE_NAME}"
   fi
-  lxc profile create k3sprofile
-  cat k3sprofile.yaml | lxc profile edit k3sprofile
-  lxc profile show k3sprofile
+  lxc profile create "${LXC_PROFILE_NAME}"
+  cat "${LXC_PROFILE_NAME}".yaml | lxc profile edit "${LXC_PROFILE_NAME}"
+  lxc profile show "${LXC_PROFILE_NAME}"
 }
 
-main() {
-  delete_if_k3sLxc_already_exists
-  #abort_if_k3sLxc_already_exists
-
-  assure_exists_storagePool_k3s_type_dir
-  assure_exists_profile_k3sprofile
-
-  lxc launch images:debian/10 k3smaster \
-    --profile k3sprofile
-
-  lxc config show k3smaster
-
-  exec_in_container k3smaster    'apt-get install -y ca-certificates curl'
-  exec_in_container k3smaster    "echo 'L /dev/kmsg - - - - /dev/console' > /etc/tmpfiles.d/kmsg.conf"
-  exec_in_container k3smaster    reboot
-  sleep 5
-  exec_in_container k3smaster    'curl -sfL https://get.k3s.io | sh -'
-  sleep 20
-
+systemctl_k3s_status_or_logs() {
   #exec_in_container k3smaster    'systemctl status k3s; journalctl -xeu k3s'
   #exec_in_container k3smaster    'systemctl stop k3s; clear; k3s'
-  exec_in_container k3smaster    'systemctl status k3s'
-  
+  exec_in_container k3smaster    'systemctl --no-pager status k3s'
+}
+
+extract_and_load_kubeconfig() {
+  rm kubeconfig.k3s.yaml || true
   lxc file pull k3smaster/etc/rancher/k3s/k3s.yaml kubeconfig.k3s.yaml
   sed -i 's:127.0.0.1:k3smaster:;s:default:k3s-lxc:g' kubeconfig.k3s.yaml
   #mkdir -p ~/.kube
@@ -88,13 +73,55 @@ main() {
   export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
   kubectl config use-context k3s-lxc
   kubectl get namespaces
+}
 
+report_memory_footprint() {
+  echo "Reporting memory footprint"
+  set +x
+  for ((i=0; i<$(($1 / 5)); i++)); do
+    shw_info "[$i/10] $(lxc info k3smaster | grep Memory | tr '\n' '\t')"
+    sleep 5
+  done
+  set -x
+}
+
+main() {
+  #LXC_PROFILE_NAME=k3sprofile
+  LXC_PROFILE_NAME=k3sprofile.zfs
+
+  delete_if_k3sLxc_already_exists
+  #abort_if_k3sLxc_already_exists
+
+  assure_exists_storagePool_k3s_type_dir
+  assure_exists_profile_k3sprofile
+
+  lxc launch images:debian/10 k3smaster --profile "${LXC_PROFILE_NAME}"
+  #lxc config show k3smaster
+
+  exec_in_container k3smaster    'apt-get install -y ca-certificates curl'
+  exec_in_container k3smaster    "echo 'L /dev/kmsg - - - - /dev/console' > /etc/tmpfiles.d/kmsg.conf"
+  exec_in_container k3smaster    reboot
+  sleep 5
+
+  # k3s latest version v1.18.9+k3s1 consumes 500-800MB ram when idle, before any workload... expected much lighter than that...
+  exec_in_container k3smaster    'curl -sfL https://get.k3s.io | sh -'
+  # k3s version from jan2020: 1,26GB idle
+  #exec_in_container k3smaster    'curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.17.0+k3s.1  sh -'
+  sleep 20
+
+  systemctl_k3s_status_or_logs
+  
+  extract_and_load_kubeconfig
+  report_memory_footprint 60
+  
 
   cat <<'EOT'
 Manually do:
 
   # add k3smaster into /etc/hosts
   sudo vi /etc/hosts
+  ...
+  k3smaster 1.2.3.4   (ip-of-lxc-container k3smaster)
 
   # go happy hacking with the k3s cluster :)
   export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
