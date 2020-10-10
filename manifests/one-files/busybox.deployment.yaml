@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-deployment
+  labels:
+    app: busybox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        ports:
+        - containerPort: 80
+        command: ["/bin/sh"]
+        #args: ["-c", "while true; do echo hello; sleep 10;done"]
+        args: ["-c", "/bin/nc -p 80 -lk -e /bin/date"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: busybox
+spec:
+  type: NodePort
+  selector:
+    app: busybox
+  ports:
+    - protocol: TCP
+      targetPort: 80
+      port: 80
+      # Optional field
+      # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
+      nodePort: 30001

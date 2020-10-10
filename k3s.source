@@ -1,0 +1,7 @@
+export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
+# setup autocomplete in bash into the current shell, bash-completion package should be installed first.
+source <(kubectl completion bash)  
+
+alias k=kubectl
+source k_completion.source
+

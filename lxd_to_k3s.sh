@@ -85,9 +85,24 @@ report_memory_footprint() {
   set -x
 }
 
+k__launch_busybox_deployment() {
+  kubectl apply -f "${__dir}"/manifests/one-files/busybox.deployment.yaml
+  sleep 2
+  kubectl get all
+  IP_LxcK3smaster=$(lxc list k3smaster --format json | jq -r '.[0].state.network.eth0.addresses[0].address')
+  #nc $IP_LxcK3smaster 30001
+  # bonus shell-power
+  cat < /dev/tcp/$IP_LxcK3smaster/30001
+
+}
+
 main() {
-  #LXC_PROFILE_NAME=k3sprofile
-  LXC_PROFILE_NAME=k3sprofile.zfs
+  LXC_PROFILE_NAME=k3sprofile
+
+  #NOTE: DONT USE ZFS, as k3s will install, but containers might not run 
+  # properly and instead show evens about overlay filesystem errors
+  #LXC_PROFILE_NAME=k3sprofile.zfs
+
 
   delete_if_k3sLxc_already_exists
   #abort_if_k3sLxc_already_exists
@@ -112,8 +127,9 @@ main() {
   systemctl_k3s_status_or_logs
   
   extract_and_load_kubeconfig
-  report_memory_footprint 60
+  #report_memory_footprint 60
   
+  k__launch_busybox_deployment
 
   cat <<'EOT'
 Manually do:
