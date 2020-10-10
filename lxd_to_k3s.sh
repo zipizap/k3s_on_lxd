@@ -143,6 +143,7 @@ Manually do:
   export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
   kubectl config use-context k3s-lxc
   kubectl get namespaces
+  k get all,ingress
 
 EOT
 

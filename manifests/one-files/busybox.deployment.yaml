@@ -28,7 +28,8 @@ kind: Service
 metadata:
   name: busybox
 spec:
-  type: NodePort
+  type: ClusterIP
+  #type: NodePort
   selector:
     app: busybox
   ports:
@@ -37,4 +38,21 @@ spec:
       port: 80
       # Optional field
       # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
-      nodePort: 30001
+      
+      # # nodePort only when type: NodePort
+      #nodePort: 30001
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: busybox
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: busybox
+          servicePort: 80
