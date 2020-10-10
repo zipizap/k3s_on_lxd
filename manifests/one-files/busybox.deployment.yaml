@@ -20,8 +20,13 @@ spec:
         ports:
         - containerPort: 80
         command: ["/bin/sh"]
-        #args: ["-c", "while true; do echo hello; sleep 10;done"]
-        args: ["-c", "/bin/nc -p 80 -lk -e /bin/date"]
+        args: 
+          - "-c"
+          - |
+            echo '#!/bin/sh
+            echo -e "HTTP/1.1 200 OK\n\n $(date)"' > /tmp/webserver.sh && \
+            chmod +x /tmp/webserver.sh &&\
+            /bin/nc -v -p 80 -lk -e /tmp/webserver.sh
 ---
 apiVersion: v1
 kind: Service
