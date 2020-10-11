@@ -89,10 +89,15 @@ k__launch_busybox_deployment() {
   kubectl apply -f "${__dir}"/manifests/one-files/busybox.deployment.yaml
   sleep 2
   kubectl get all
-  IP_LxcK3smaster=$(lxc list k3smaster --format json | jq -r '.[0].state.network.eth0.addresses[0].address')
-  #nc $IP_LxcK3smaster 30001
-  # bonus shell-power
-  cat < /dev/tcp/$IP_LxcK3smaster/30001
+  ## old friki code, from tests with NodePort
+  ## Code looks so friki, that it deserves to remain as comment :)
+  #IP_LxcK3smaster=$(lxc list k3smaster --format json | jq -r '.[0].state.network.eth0.addresses[0].address')
+  # #nc $IP_LxcK3smaster 30001
+  # # bonus shell-power
+  # cat < /dev/tcp/$IP_LxcK3smaster/30001
+
+  # Test the ingress service connection
+  curl -kv http://k3smaster
 
 }
 

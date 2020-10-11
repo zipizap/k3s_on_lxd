@@ -41,10 +41,9 @@ spec:
     - protocol: TCP
       targetPort: 80
       port: 80
-      # Optional field
-      # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
       
       # # nodePort only when type: NodePort
+      # # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
       #nodePort: 30001
 ---
 apiVersion: networking.k8s.io/v1beta1
