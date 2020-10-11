@@ -140,8 +140,7 @@ Manually do:
   k3smaster 1.2.3.4   (ip-of-lxc-container k3smaster)
 
   # go happy hacking with the k3s cluster :)
-  export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
-  kubectl config use-context k3s-lxc
+  source $PWD/k3s.source
   kubectl get namespaces
   k get all,ingress
 
