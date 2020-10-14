@@ -18,32 +18,48 @@ image:
   pullPolicy: IfNotPresent
 # imagePullSecrets:
     # - name: docker
+
+
 service:
   name: registry
-  #type: ClusterIP
-  type: LoadBalancer
-  # clusterIP:
-  port: 5000
-  # nodePort:
-  # loadBalancerIP:
-  # loadBalancerSourceRanges:
   annotations: {}
   # foo.io/bar: "true"
+
+  # type: NodePort
+  # port: 5000
+  # nodePort:
+
+  type: ClusterIP
+  port: 5000
+  # clusterIP:
+
+  # type: LoadBalancer
+  # port: 5000
+  # loadBalancerIP:
+  # loadBalancerSourceRanges:
+
+
 ingress:
-  enabled: false
-  path: /
-  # Used to create an Ingress record.
-  hosts:
-    - chart-example.local
-  annotations: {}
+  enabled: true
+  labels: {}
+  # annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  labels: {}
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+
+  hosts:
+    - registry.k3smaster
+  path: /
+  # Used to create an Ingress record.
+
   tls:
     # Secrets must be manually created in the namespace.
     # - secretName: chart-example-tls
     #   hosts:
     #     - chart-example.local
+
+
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
