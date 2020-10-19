@@ -71,14 +71,20 @@ resources: {}
   # requests:
   #  cpu: 100m
   #  memory: 128Mi
+
+
+# PersistentVolumeClaim
 persistence:
+  enabled: true
   accessMode: 'ReadWriteOnce'
-  enabled: false
-  size: 10Gi
+  # local-path for k3s, see https://rancher.com/docs/k3s/latest/en/storage/
+  storageClass: 'local-path'
   # storageClass: '-'
+  size: 3Gi
 
 # set the type of filesystem to use: filesystem, s3
 storage: filesystem
+
 
 # Set this to name of secret for tls certs
 # tlsSecretName: registry.docker.example.com
