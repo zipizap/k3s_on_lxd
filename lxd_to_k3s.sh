@@ -146,7 +146,7 @@ Manually do:
   # go happy hacking with the k3s cluster :)
   source $PWD/k3s.source
   kubectl get namespaces
-  k get all,ingress
+  k get all,ingress,persistentvolumeclaims
 
 EOT
 
