@@ -6,5 +6,5 @@ export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
 source <(kubectl completion bash)  
 
 alias k=kubectl
-source k_completion.source
-
+#source k_completion.source
+source <(kubectl completion bash | sed '/__start_kubectl kubectl/ s/ kubectl/ k/g')
