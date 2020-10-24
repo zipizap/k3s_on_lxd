@@ -2,9 +2,11 @@
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${__dir}"
 export KUBECONFIG=$PWD/kubeconfig.k3s.yaml
-# setup autocomplete in bash into the current shell, bash-completion package should be installed first.
 source <(kubectl completion bash)  
-
 alias k=kubectl
-#source k_completion.source
 source <(kubectl completion bash | sed '/__start_kubectl kubectl/ s/ kubectl/ k/g')
+
+# helm
+source <(helm completion bash)
+alias h=helm
+source <(helm completion bash | sed '/__start_helm helm/ s/ helm/ h/g')
