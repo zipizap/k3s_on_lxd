@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probes-demo
+  labels:
+    app: probes-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probes-demo
+  template:
+    metadata:
+      labels:
+        app: probes-demo
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["/bin/sh"]
+        args: 
+          - "-c"
+          - |
+            sleep 2 && touch /tmp/flag.startup.complete 
+            tail -f /dev/null
+        startupProbe:
+          exec:
+            command: 
+            - cat
+            - /tmp/flag.startup.complete
+          failureThreshold: 5
+          periodSeconds: 1
+---
