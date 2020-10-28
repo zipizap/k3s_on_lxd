@@ -20,14 +20,12 @@ spec:
         command: ["/bin/sh"]
         args: 
           - "-c"
-          - |
-            sleep 2 && touch /tmp/flag.startup.complete 
-            tail -f /dev/null
+          - 'sleep 10 && touch /tmp/flag.startup.complete && tail -f /dev/null'
         startupProbe:
           exec:
             command: 
             - cat
             - /tmp/flag.startup.complete
-          failureThreshold: 5
+          failureThreshold: 9
           periodSeconds: 1
 ---
