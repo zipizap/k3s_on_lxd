@@ -111,10 +111,10 @@ k__patch_metrics_server() {
 }
 
 main() {
-  LXC_PROFILE_NAME=k3sprofile
+  LXC_PROFILE_NAME=lxdprofile.k3s
   #NOTE: DONT USE ZFS, as k3s will install, but containers might not run 
   # properly and instead show evens about overlay filesystem errors
-  #LXC_PROFILE_NAME=k3sprofile.zfs
+  #LXC_PROFILE_NAME=lxdprofile.k3s_over_zfs
 
 
   delete_if_k3sLxc_already_exists
