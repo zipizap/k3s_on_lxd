@@ -101,6 +101,15 @@ k__launch_busybox_deployment() {
 
 }
 
+k__patch_metrics_server() {
+  # As of nov.2020, if "k top nodes" does not work properly, then probably the metrics-server is misconfigured and needs fixing
+  # See https://github.com/kubernetes-sigs/kind/issues/398
+  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+  kubectl patch deployment metrics-server -n kube-system -p '{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls","--kubelet-preferred-address-types=InternalIP"]}]}}}}'
+  sleep 5
+  # kubectl top nodes should now start working after some minutes
+}
+
 main() {
   LXC_PROFILE_NAME=k3sprofile
   #NOTE: DONT USE ZFS, as k3s will install, but containers might not run 
@@ -132,6 +141,8 @@ main() {
   
   extract_and_load_kubeconfig
   #report_memory_footprint 60
+
+  k__patch_metrics_server
   
   k__launch_busybox_deployment
 
