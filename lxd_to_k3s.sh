@@ -141,10 +141,19 @@ main() {
   
   extract_and_load_kubeconfig
   #report_memory_footprint 60
-
   k__patch_metrics_server
   
-  k__launch_busybox_deployment
+  # --- At this point --- 
+  # We have a working k3s cluster :)
+
+  # Helm: add repo stable
+  helo repo add stable https://charts.helm.sh/stable && helm repo update
+
+
+  # # Launch a test deployment
+  # k__launch_busybox_deployment
+
+
 
   cat <<'EOT'
 Manually do:
