@@ -118,7 +118,7 @@ main() {
 
 
   delete_if_k3sLxc_already_exists
-  #abort_if_k3sLxc_already_exists
+  abort_if_k3sLxc_already_exists
 
   assure_exists_storagePool_k3s_type_dir
   assure_exists_profile_k3sprofile
