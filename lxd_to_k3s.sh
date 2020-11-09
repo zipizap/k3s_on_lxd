@@ -147,7 +147,18 @@ main() {
   # We have a working k3s cluster :)
 
   # Helm: add repo stable
-  helo repo add stable https://charts.helm.sh/stable && helm repo update
+  # Note: all charts in https://github.com/helm/charts/tree/master/stable
+  helm repo add stable https://charts.helm.sh/stable &&\
+  helm repo update
+
+  # Optional: my-docker-registry 
+  #  - via traefik-ingress, 
+  #  - with persistent-storage on k3s "local-path"
+  helm \
+    upgrade --install --atomic \
+    my-docker-registry \
+    stable/docker-registry \
+    --values "${__dir}"/charts/docker-registry.values.yaml
 
 
   # # Launch a test deployment
@@ -164,7 +175,7 @@ Manually do:
   k3smaster 1.2.3.4   (ip-of-lxc-container k3smaster)
 
   # go happy hacking with the k3s cluster :)
-  source $PWD/k3s.source
+  source "${__dir}"/k3s.source
   kubectl get namespaces
   k get all,ingress,persistentvolumeclaims
 
