@@ -110,8 +110,11 @@ k__patch_metrics_server() {
   # kubectl top nodes should now start working after some minutes
 }
 
-main() {
+
+main__installOrReinstall_k3s_on_container_k3smaster_of_lxd() {
   LXC_PROFILE_NAME=lxdprofile.k3s
+  #LXC_IMAGE=debian/10
+  LXC_IMAGE=ubuntu/18.04
   #NOTE: DONT USE ZFS, as k3s will install, but containers might not run 
   # properly and instead show evens about overlay filesystem errors
   #LXC_PROFILE_NAME=lxdprofile.k3s_over_zfs
@@ -123,7 +126,7 @@ main() {
   assure_exists_storagePool_k3s_type_dir
   assure_exists_profile_k3sprofile
 
-  lxc launch images:debian/10 k3smaster --profile "${LXC_PROFILE_NAME}"
+  lxc launch images:"${LXC_IMAGE}" k3smaster --profile "${LXC_PROFILE_NAME}"
   #lxc config show k3smaster
 
   exec_in_container k3smaster    'apt-get install -y ca-certificates curl'
@@ -131,8 +134,12 @@ main() {
   exec_in_container k3smaster    reboot
   sleep 5
 
-  # k3s latest version v1.18.9+k3s1 consumes 500-800MB ram when idle, before any workload... expected much lighter than that...
-  exec_in_container k3smaster    'curl -sfL https://get.k3s.io | sh -'
+  if [[ "${INSTALL_ISTIO}" == "true" ]]; then
+    exec_in_container k3smaster    'curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy traefik"  sh -'  
+  else
+    exec_in_container k3smaster    'curl -sfL https://get.k3s.io | sh -'
+  fi
+  # k3s version v1.18.9+k3s1 consumes 500-800MB ram when idle, before any workload... expected much lighter than that...
   # k3s version from jan2020: 1,26GB idle
   #exec_in_container k3smaster    'curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.17.0+k3s.1  sh -'
   sleep 20
@@ -142,15 +149,18 @@ main() {
   extract_and_load_kubeconfig
   #report_memory_footprint 60
   k__patch_metrics_server
-  
-  # --- At this point --- 
-  # We have a working k3s cluster :)
 
   # Helm: add repo stable
   # Note: all charts in https://github.com/helm/charts/tree/master/stable
+  if helm repo list | grep stable &>/dev/null
+  then
+    helm repo remove stable
+  fi
   helm repo add stable https://charts.helm.sh/stable &&\
   helm repo update
+}
 
+main__helm_install_my-docker-registry_using_PVClocalPath() {
   # Optional: my-docker-registry 
   #  - via traefik-ingress, 
   #  - with persistent-storage on k3s "local-path"
@@ -159,11 +169,91 @@ main() {
     my-docker-registry \
     stable/docker-registry \
     --values "${__dir}"/charts/docker-registry.values.yaml
+}
+
+main__install_istio() {
+  ## https://istio.io/latest/docs/setup/getting-started/
+  # Download
+  if [[ ! -d "${__dir}/istio-1.7.4" ]]
+  then
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.7.4 TARGET_ARCH=x86_64 sh -
+  fi
+
+  ISTIO_DIR=$(find $PWD -maxdepth 1 -type d -iname 'istio*')
+  if [[ "${ISTIO_DIR}" ]];
+  then
+    # ISTIO_DIR found
+    export PATH=$PATH:"${ISTIO_DIR}"/bin
+  else
+    echo "ISTIO_DIR not found... something went very wrong... aborting"
+    exit 1
+  fi
+  cd "${ISTIO_DIR}"
+  istioctl install --set profile=demo
+  ##...fails...
+  ##investigate "k3s istio"
+  kubectl label namespace default istio-injection=enabled
+
+  cd "${__dir}"
+}
+
+parse_arguments() {
+  INSTALL_MY_DOCKER_REGISTRY=false
+  INSTALL_ISTIO=false
+  # https://superuser.com/questions/186272/check-if-any-of-the-parameters-to-a-bash-script-match-a-string
+  # idiomatic parameter and option handling in sh
+  if [[ $# -eq 0 ]]; then
+    cat <<EOT
+Usage: $0 install-k3s [install-my-docker-registry] [install-istio]
+EOT
+    exit 1
+  fi
+
+  while test $# -gt 0
+  do
+      case "$1" in
+          install-k3s) :
+              ;;
+          install-my-docker-registry) INSTALL_MY_DOCKER_REGISTRY=true
+              ;;
+          install-istio) INSTALL_ISTIO=true
+              ;;
+          *) echo "Unknown argument: '$1' - aborting"
+						 exit 1
+              ;;
+      esac
+      shift
+  done
+}
+
+check_k8s_dns() {
+  :
+}
+
+main() {
+  parse_arguments "$@"
+
+  # Install or reinstall lxd-container k3smaster, and inside k3s
+  main__installOrReinstall_k3s_on_container_k3smaster_of_lxd 
+    # At this point: We have the k3s cluster setup and up-and-running :)
 
 
-  # # Launch a test deployment
+  # Optional: my-docker-registry 
+  #  - via traefik-ingress, 
+  #  - with persistent-storage on k3s "local-path"
+  if [[ "${INSTALL_MY_DOCKER_REGISTRY}" == "true" ]]; then
+    main__helm_install_my-docker-registry_using_PVClocalPath
+  fi
+
+  check_k8s_dns
+
+
+  # Optional: Launch a test deployment
   # k__launch_busybox_deployment
-
+  if [[ "${INSTALL_ISTIO}" == "true" ]]; then
+    :
+    #main__install_istio
+  fi
 
 
   cat <<'EOT'
